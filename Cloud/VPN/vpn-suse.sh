@@ -16,6 +16,7 @@ Address = 5.0.0.0/31
 PrivateKey = $SERVER_PRIVATE_KEY
 ListenPort = 55555
 SaveConfig = true
+MTU = 1420
 
 [Peer]
 PublicKey = CLIENT_PUBLIC_KEY
