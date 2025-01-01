@@ -10,9 +10,9 @@ docker volume create `
 docker run `
 --sig-proxy=false `
 --name nextcloud-aio-mastercontainer `
---publish 80:80 `
---publish 8080:8080 `
---publish 8443:8443 `
+--publish 5.0.0.1:80:80 `
+--publish 5.0.0.1:8080:8080 `
+--publish 5.0.0.1:8443:8443 `
 --volume nextcloud_aio_mastercontainer:/mnt/docker-aio-config `
 --volume //var/run/docker.sock:/var/run/docker.sock:ro `
 -e NEXTCLOUD_DATADIR="nextcloud_aio_nextcloud_datadir" `
