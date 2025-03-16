@@ -8,4 +8,14 @@ grep TF_PLUGIN_CACHE_DIR ~/.bashrc || echo 'export TF_PLUGIN_CACHE_DIR="$HOME/.t
 EOT
 source  /tmp/setup-ec2.sh
 
+tee /tmp/setup-creds.sh << EOT
+aws configure set region us-east-1 --profile default
+aws configure set output json --profile default
+aws configure set aws_access_key_id CHANGEME --profile default
+aws configure set aws_secret_access_key CHANGEMETOO --profile default
+aws configure set cli_pager "" --profile default
+aws configure set cli_history enabled
+EOT
+source /tmp/setup-creds.sh
+
 sudo vim ~/.aws/credentials
