@@ -1,0 +1,11 @@
+#!/bin/bash
+tee /tmp/setup-ec2.sh << EOT
+sudo snap install aws-cli --classic
+sudo snap install terraform --classic
+terraform -install-autocomplete
+export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+grep TF_PLUGIN_CACHE_DIR ~/.bashrc || echo 'export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"' >> ~/.bashrc
+EOT
+source  /tmp/setup-ec2.sh
+
+sudo vim ~/.aws/credentials

@@ -1,0 +1,14 @@
+#!/bin/bash
+sudo apt update
+sudo apt install -y mysql-client
+
+tee crea-wordpress-db.sql <<EOF
+CREATE DATABASE wordpressdb01;
+CREATE USER 'asix01'@'%' IDENTIFIED BY 'Sup3rins3gura!';
+GRANT ALL PRIVILEGES ON wordpressdb01.* TO 'asix01'@'%';
+FLUSH PRIVILEGES;
+exit
+EOF
+
+## compte que ara no estem "dintre" de la instància i per tant ens cal indicar ON està ( -h) 
+cat crea-wordpress-db.sql | sudo mysql -u admin -pUltr4ins3gur4! -h efs-rds.cxtfe4jkj9h2.us-east-1.rds.amazonaws.com
