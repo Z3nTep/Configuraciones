@@ -1,2 +1,2 @@
 # Incompleto
-### Aún tengo fallos con la reoslución de dns
+### Aún tengo fallos con la resolución de dns
