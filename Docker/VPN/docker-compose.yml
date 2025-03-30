@@ -1,0 +1,67 @@
+services:
+  wireguard:
+    container_name: wireguard
+    image: linuxserver/wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - SERVERURL=z3ncloud.duckdns.org
+      - SERVERPORT=51820
+      - PEERS=${MAX_PEERS:-3}
+      - PEERDNS=${DNS_IP:-5.0.0.2}:5353
+      - INTERNAL_SUBNET=${VPN_SUBNET:-55.0.0.0}
+    volumes:
+      - ./wireguard/config:/config
+      - /lib/modules:/lib/modules:ro
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    networks:
+      vpnnet:
+        ipv4_address: 5.0.0.3
+
+  adguard:
+    container_name: adguard
+    image: adguard/adguardhome
+    restart: unless-stopped
+    ports:
+      - 5353:53/tcp
+      - 5353:53/udp
+      - 443:443
+      - 8081:80
+      - 3000:3000/tcp
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+    networks:
+      vpnnet:
+        ipv4_address: ${DNS_IP:-5.0.0.2}
+    depends_on:
+      - wireguard
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - 8080:80
+      - 8443:443
+    volumes:
+      - ./nginx/config:/etc/nginx/conf.d
+      - ./nginx/web-sites:/usr/share/nginx/html
+    networks:
+      vpnnet:
+        ipv4_address: 5.0.0.4
+
+networks:
+  vpnnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${VPN_SUBNET:-5.0.0.0}/24
