@@ -10,11 +10,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Madrid
-<<<<<<< HEAD
-      - SERVERURL=z3ncloud.duckdns.org
-=======
-      - SERVERURL=dominio.com
->>>>>>> 29c7a2e (DNS/VPN update)
+      - SERVERURL=tu.dominio.com
       - SERVERPORT=51820
       - PEERS=${MAX_PEERS:-3}
       - PEERDNS=${DNS_IP:-5.0.0.2}:5353
@@ -68,8 +64,5 @@ networks:
     driver: bridge
     ipam:
       config:
-<<<<<<< HEAD
         - subnet: ${VPN_SUBNET:-5.0.0.0}/24
-=======
         - subnet: ${VPN_SUBNET:-5.0.0.0}/24
->>>>>>> 29c7a2e (DNS/VPN update)
