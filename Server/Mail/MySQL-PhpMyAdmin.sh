@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Variables
 MYSQL_ROOT_PASSWORD="rootpassword"
 MAIL_DB_USER="mailuser"
