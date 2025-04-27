@@ -28,7 +28,8 @@ sudo apt install -y apache2 \
                  php-mbstring \
                  php-mysql \
                  php-xml \
-                 php-zip
+                 php-zip \
+                 zip
 
 sudo apt install -y nfs-common
 
