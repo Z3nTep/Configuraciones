@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo mysqldump -u admin -pUltr4ins3gur4! -h efs24365.cxtfe4jkj9h2.us-east-1.rds.amazonaws.com > copiaseg.sql
+sudo mysqldump -u admin -p wordpressdb01 -pUltr4ins3gur4! -h efs24365.cxtfe4jkj9h2.us-east-1.rds.amazonaws.com > copiaseg.sql
 sudo zip -r documentroot.zip /srv/www/wordpress
 
 aws s3 cp documentroot.zip s3://2024entrenacatskillsxx-backup
