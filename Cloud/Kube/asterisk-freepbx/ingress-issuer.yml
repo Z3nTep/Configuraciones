@@ -1,0 +1,48 @@
+# ClusterIssuer para Let's Encrypt (Producción)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: idumont.personal@gmail.com # Cambia esto por tu correo real
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: alb
+
+---
+# Ingress para jitsi-web con TLS gestionado por cert-manager
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: freepbx-web-ingress
+  namespace: default # Cambia si usas otro namespace
+  annotations:
+    kubernetes.io/ingress.class: alb
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # alb.ingress.kubernetes.io/subnets: subnet-006435b54690c5782,subnet-057bc8fad61f8e060 # Cambia por tus subnets
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  ingressClassName: alb
+  tls:
+    - hosts:
+        - freepbx.sub.dominio.com # Cambia por tu dominio real
+      secretName: freepbx-web-tls # Cambia el nombre del secreto
+  rules:
+    - host: freepbx.sub.dominio.com # Cambia por tu dominio real
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: myfreepbx-web # Cambia por el nombre real de tu servicio
+                port:
+                  number: 80

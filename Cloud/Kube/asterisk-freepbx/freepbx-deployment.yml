@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freepbx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: freepbx
+  template:
+    metadata:
+      labels:
+        app: freepbx
+    spec:
+      containers:
+      - name: freepbx
+        image: tiredofit/freepbx:latest
+        ports:
+        - containerPort: 80   # Web
+        - containerPort: 5060 # SIP
+        - containerPort: 5160 # SIP TLS
+        - containerPort: 18000 # RTP (ejemplo)
+        - containerPort: 18001 # RTP (ejemplo)
+        env:
+        - name: RTP_START
+          value: "18000"
+        - name: RTP_FINISH
+          value: "18001"
+        # Añade más variables de entorno según la imagen
+		#- name: ADMIN_USERNAME
+        #  value: "admin"
+        #- name: ADMIN_PASSWORD
+        #  value: "admin"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: freepbx
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer
+  selector:
+    app: freepbx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: sip
+      port: 5060
+      targetPort: 5060
+      protocol: UDP
+    - name: sip-tls
+      port: 5160
+      targetPort: 5160
+      protocol: UDP
+    - name: rtp1
+      port: 18000
+      targetPort: 18000
+      protocol: UDP
+    - name: rtp2
+      port: 18001
+      targetPort: 18001
+      protocol: UDP
