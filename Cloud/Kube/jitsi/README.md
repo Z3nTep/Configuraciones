@@ -29,20 +29,7 @@ done
 
 ---
 
-## 3. Instala AWS Load Balancer Controller
-
-> **Este paso es fundamental para que el Ingress de tipo ALB funcione correctamente en EKS.  
-> Debe hacerse después de instalar el cert-manager.**
-
-```
-curl -Lo aws-load-balancer-controller.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.11.0/v2_11_0_full.yaml
-sed -i "s/--cluster-name=.*/--cluster-name=$CLUSTER_NAME/" aws-load-balancer-controller.yaml
-kubectl apply -f aws-load-balancer-controller.yaml
-```
-
----
-
-## 4. Etiqueta las subredes públicas para el ALB
+## 3. Etiqueta las subredes públicas para el ALB
 
 Puedes hacerlo de dos formas:
 
@@ -58,6 +45,21 @@ Puedes hacerlo de dos formas:
 ```
 aws ec2 create-tags --resources <subnet-id-1> <subnet-id-2> --tags Key=kubernetes.io/role/elb,Value=1 --region us-east-1
 aws ec2 create-tags --resources <subnet-id-1> <subnet-id-2> --tags Key=kubernetes.io/cluster/<nombre-de-tu-cluster>,Value=shared --region us-east-1
+```
+
+> **Asegúrate de etiquetar correctamente las subredes públicas antes de instalar el AWS Load Balancer Controller para que pueda descubrirlas automáticamente[1][2].**
+
+---
+
+## 4. Instala AWS Load Balancer Controller
+
+> **Este paso es fundamental para que el Ingress de tipo ALB funcione correctamente en EKS.  
+> Debe hacerse después de etiquetar las subredes y de instalar el cert-manager.**
+
+```
+curl -Lo aws-load-balancer-controller.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.11.0/v2_11_0_full.yaml
+sed -i "s/--cluster-name=.*/--cluster-name=$CLUSTER_NAME/" aws-load-balancer-controller.yaml
+kubectl apply -f aws-load-balancer-controller.yaml
 ```
 
 ---
@@ -125,7 +127,7 @@ metadata:
   annotations:
     meta.helm.sh/release-name: myjitsi
     meta.helm.sh/release-namespace: default
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing" # Aquí está
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 creationTimestamp: "2025-05-18T13:54:00Z"
 labels:
   app.kubernetes.io/component: jvb
@@ -235,5 +237,3 @@ kubectl delete pod -l app.kubernetes.io/component=jvb
 
 ---
 ```
-
-Este orden cumple con la documentación oficial y asegura que el AWS Load Balancer Controller esté listo antes de aplicar cualquier recurso que lo requiera[1][2][4][5].
