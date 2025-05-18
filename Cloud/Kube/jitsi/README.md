@@ -10,26 +10,7 @@ cat demo-eks-eksctl.yaml | envsubst | eksctl create cluster -f -
 
 ---
 
-## 2. Aplica los manifiestos de Ingress y Cert Manager
-
-```
-kubectl apply -f ingress-issuer.yml 
-kubectl apply -f alb-ingressclass.yml
-```
-
----
-
-## 3. Configura el StorageClass y el PVC para Prosody
-
-```
-kubectl delete storageclass gp2
-kubectl apply -f prosody-pvc.yml
-kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-```
-
----
-
-## 4. Instala Helm y Cert-Manager
+## 2. Instala Helm y Cert-Manager
 
 ```
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
@@ -48,7 +29,7 @@ done
 
 ---
 
-## 5. Instala AWS Load Balancer Controller
+## 3. Instala AWS Load Balancer Controller
 
 > **Este paso es fundamental para que el Ingress de tipo ALB funcione correctamente en EKS.  
 > Debe hacerse después de instalar el cert-manager.**
@@ -61,7 +42,7 @@ kubectl apply -f aws-load-balancer-controller.yaml
 
 ---
 
-## 6. Etiqueta las subredes públicas para el ALB
+## 4. Etiqueta las subredes públicas para el ALB
 
 Puedes hacerlo de dos formas:
 
@@ -77,6 +58,25 @@ Puedes hacerlo de dos formas:
 ```
 aws ec2 create-tags --resources <subnet-id-1> <subnet-id-2> --tags Key=kubernetes.io/role/elb,Value=1 --region us-east-1
 aws ec2 create-tags --resources <subnet-id-1> <subnet-id-2> --tags Key=kubernetes.io/cluster/<nombre-de-tu-cluster>,Value=shared --region us-east-1
+```
+
+---
+
+## 5. Aplica los manifiestos de Ingress y Cert Manager
+
+```
+kubectl apply -f ingress-issuer.yml 
+kubectl apply -f alb-ingressclass.yml
+```
+
+---
+
+## 6. Configura el StorageClass y el PVC para Prosody
+
+```
+kubectl delete storageclass gp2
+kubectl apply -f prosody-pvc.yml
+kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 ```
 
 ---
@@ -232,3 +232,8 @@ kubectl get pods
 kubectl delete pod myjitsi-prosody-0
 kubectl delete pod -l app.kubernetes.io/component=jvb
 ```
+
+---
+```
+
+Este orden cumple con la documentación oficial y asegura que el AWS Load Balancer Controller esté listo antes de aplicar cualquier recurso que lo requiera[1][2][4][5].
