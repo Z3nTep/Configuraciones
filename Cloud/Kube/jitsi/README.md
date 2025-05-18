@@ -89,11 +89,11 @@ helm repo update
 helm install myjitsi jitsi/jitsi-meet \
   --set ingress.enabled=true \
   --set ingress.annotations."kubernetes\.io/ingress\.class"=alb \
-  --set ingress.hosts.host="jitsi.sub.idumont.cat" \
+  --set ingress.hosts.host="jitsi.sub.dominio.com" \
   --set ingress.hosts.paths="/" \
   --set jvb.service.type=LoadBalancer \
-  --set jvb.publicIPs="idumont.cat" \
-  --set publicURL="https://jitsi.sub.idumont.cat"
+  --set jvb.publicIPs="dominio.com" \
+  --set publicURL="https://jitsi.sub.dominio.com"
 ```
 
 ---
@@ -221,7 +221,7 @@ kubectl get ingress jitsi-ingress
 ## 11. Crea el registro CNAME en Route53
 
 - El registro debe ser un CNAME al ALB del Ingress.
-- Ejemplo: `jitsi.sub.idumont.cat` → `[ALB DNS]`
+- Ejemplo: `jitsi.sub.dominio.com` → `[ALB DNS]`
 
 ---
 
