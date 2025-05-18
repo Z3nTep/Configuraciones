@@ -1,0 +1,287 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+#########################
+# 1. Route53: Zona hospedada
+#########################
+
+resource "aws_route53_zone" "sub_idumont_cat" {
+  name    = "sub.idumont.cat"
+  comment = "Zona hospedada pública para sub.idumont.cat"
+}
+
+output "ns_servers" {
+  value       = aws_route53_zone.sub_idumont_cat.name_servers
+  description = "Servidores NS para delegar sub.idumont.cat en tu dominio principal"
+}
+
+#########################
+# 2. VPC y red básica
+#########################
+
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+}
+
+resource "aws_subnet" "public_a" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+resource "aws_route_table_association" "public_a" {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
+#########################
+# 3. Seguridad
+#########################
+
+resource "aws_security_group" "alb" {
+  name        = "owncast-alb-sg"
+  description = "Allow HTTP/HTTPS"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "owncast" {
+  name        = "owncast-sg"
+  description = "Allow Owncast ports and SSH"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  ingress {
+    from_port   = 1935
+    to_port     = 1935
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # <-- Cambia esto para permitir acceso global o pon tu IP
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+#########################
+# 4. Instancia EC2 con Owncast y ffmpeg
+#########################
+
+resource "aws_instance" "owncast" {
+  ami           = "ami-0c02fb55956c7d316" # Amazon Linux 2 en us-east-1
+  instance_type = "t3.micro"
+  subnet_id     = aws_subnet.public_a.id
+  vpc_security_group_ids = [aws_security_group.owncast.id]
+  associate_public_ip_address = true
+  key_name      = "vockey" # Cambia por tu clave SSH
+
+  user_data = file("owncast_userdata.sh")
+
+  tags = {
+    Name = "Owncast"
+  }
+}
+
+#########################
+# 5. Target group para ALB
+#########################
+
+resource "aws_lb_target_group" "owncast" {
+  name     = "owncast-tg"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    port                = "8080"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 5
+    interval            = 30
+    matcher             = "200-399"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "owncast" {
+  target_group_arn = aws_lb_target_group.owncast.arn
+  target_id        = aws_instance.owncast.id
+  port             = 8080
+}
+
+#########################
+# 6. ALB
+#########################
+
+resource "aws_lb" "owncast" {
+  name               = "owncast-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = [
+    aws_subnet.public_a.id,
+    aws_subnet.public_b.id
+  ]
+  enable_http2             = true
+  enable_deletion_protection = false
+
+  tags = {
+    Name = "owncast-alb"
+  }
+}
+
+#########################
+# 7. ACM: Certificado SSL para owncast.sub.idumont.cat
+#########################
+
+resource "aws_acm_certificate" "owncast" {
+  domain_name       = "owncast.sub.idumont.cat"
+  validation_method = "DNS"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "owncast_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.owncast.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+  zone_id = aws_route53_zone.sub_idumont_cat.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
+  ttl     = 60
+}
+
+resource "aws_acm_certificate_validation" "owncast" {
+  certificate_arn         = aws_acm_certificate.owncast.arn
+  validation_record_fqdns = [for record in aws_route53_record.owncast_cert_validation : record.fqdn]
+}
+
+#########################
+# 8. ALB Listeners (HTTP y HTTPS)
+#########################
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.owncast.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.owncast.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate_validation.owncast.certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.owncast.arn
+  }
+}
+
+#########################
+# 9. DNS: A-ALIAS para owncast.sub.idumont.cat
+#########################
+
+resource "aws_route53_record" "owncast" {
+  zone_id = aws_route53_zone.sub_idumont_cat.zone_id
+  name    = "owncast.sub.idumont.cat"
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.owncast.dns_name
+    zone_id                = aws_lb.owncast.zone_id
+    evaluate_target_health = true
+  }
+}
+
+output "owncast_url_https" {
+  value = "https://owncast.sub.idumont.cat"
+  description = "Acceso seguro a Owncast"
+}
+
+output "alb_dns" {
+  value = aws_lb.owncast.dns_name
+  description = "DNS público del ALB"
+}
