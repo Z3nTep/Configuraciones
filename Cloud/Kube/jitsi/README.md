@@ -118,6 +118,12 @@ Así es como debe verse la sección relevante del archivo `aws-load-balancer-con
           initialDelaySeconds: 30
 ```
 
+Una vez que hayas verificado y, si es necesario, corregido la línea correspondiente, vuelve a aplicar el manifiesto con:
+
+```
+kubectl apply -f aws-load-balancer-controller.yaml
+```
+
 ---
 
 ## 5. Aplica los manifiestos de Ingress y Cert Manager
