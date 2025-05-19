@@ -87,6 +87,14 @@ sed -i "s/--cluster-name=.*/--cluster-name=$CLUSTER_NAME/" aws-load-balancer-con
 kubectl apply -f aws-load-balancer-controller.yaml
 ```
 
+> **Revisión manual recomendada en el paso 4:**  
+> Después de ejecutar el comando `sed` para modificar el fichero `aws-load-balancer-controller.yaml`, revisa manualmente que el cambio se haya aplicado correctamente.
+>
+> Para ello, abre el archivo y ve directamente a la línea 965, donde se encuentra la variable `--cluster-name=`.  
+> Verifica que el valor corresponde al nombre de tu clúster EKS.
+>
+> Si el comando no funcionó correctamente, edita la línea manualmente para asegurarte de que el parámetro `--cluster-name=` tenga el valor adecuado.
+
 ---
 
 ## 5. Aplica los manifiestos de Ingress y Cert Manager
@@ -95,14 +103,6 @@ kubectl apply -f aws-load-balancer-controller.yaml
 kubectl apply -f ingress-issuer.yml 
 kubectl apply -f alb-ingressclass.yml
 ```
-
-> **Revisión manual recomendada en el paso 4:**  
-> Después de ejecutar el comando `sed` para modificar el fichero `aws-load-balancer-controller.yaml`, revisa manualmente que el cambio se haya aplicado correctamente.
->
-> Para ello, abre el archivo y ve directamente a la línea 965, donde se encuentra la variable `--cluster-name=`.  
-> Verifica que el valor corresponde al nombre de tu clúster EKS.
->
-> Si el comando no funcionó correctamente, edita la línea manualmente para asegurarte de que el parámetro `--cluster-name=` tenga el valor adecuado.
 
 ---
 
