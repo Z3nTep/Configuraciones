@@ -95,6 +95,30 @@ kubectl apply -f aws-load-balancer-controller.yaml
 >
 > Si el comando no funcionó correctamente, edita la línea manualmente para asegurarte de que el parámetro `--cluster-name=` tenga el valor adecuado.
 
+Así es como debe verse la sección relevante del archivo `aws-load-balancer-controller.yaml` (línea 965 aprox.), con el valor correcto en `--cluster-name=`:
+
+```
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/name: aws-load-balancer-controller
+    spec:
+      containers:
+      - args:
+        - --cluster-name=este-es-mi-cluster
+        - --ingress-class=alb
+        image: public.ecr.aws/eks/aws-load-balancer-controller:v2.11.0
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /healthz
+            port: 61779
+            scheme: HTTP
+          initialDelaySeconds: 30
+```
+```
+
 ---
 
 ## 5. Aplica los manifiestos de Ingress y Cert Manager
