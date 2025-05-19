@@ -117,7 +117,6 @@ Así es como debe verse la sección relevante del archivo `aws-load-balancer-con
             scheme: HTTP
           initialDelaySeconds: 30
 ```
-```
 
 ---
 
