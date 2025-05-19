@@ -1,5 +1,30 @@
 # 🛠️ Guía paso a paso: Despliegue de Jitsi Meet en AWS EKS con Kubernetes
 
+## 🔑 Cosas previas a tener configuradas
+
+Antes de comenzar con el despliegue de Jitsi Meet en AWS EKS, asegúrate de tener lo siguiente listo:
+
+- **Zona hospedada en Route 53:**  
+  Debes contar con una zona hospedada pública para el subdominio que vas a usar, por ejemplo:  
+  - `sub.dominio.com`  
+  Esto permitirá gestionar los registros DNS necesarios para el acceso externo a Jitsi Meet.
+
+- **Certificado SSL para Jitsi:**  
+  Es indispensable tener un certificado válido para el dominio completo que utilizará Jitsi Meet, por ejemplo:  
+  - `jitsi.sub.dominio.com`  
+  El certificado puede ser de ACM (AWS Certificate Manager) y debe estar en la misma región en la que desplegarás el clúster EKS.
+
+- **Herramientas instaladas en tu máquina local:**  
+  Asegúrate de tener instaladas y configuradas las siguientes herramientas de línea de comandos:
+  - `aws-cli` (para interactuar con AWS)
+  - `eksctl` (para crear y administrar clústeres de EKS)
+  - `kubectl` (para gestionar recursos de Kubernetes)  
+  Todas deben estar autenticadas y configuradas para operar sobre tu cuenta y región de AWS.
+
+---
+
+> **Sin estos requisitos previos, no podrás completar correctamente el despliegue de Jitsi Meet en AWS EKS.**
+
 ---
 
 ## 1. Lanza el clúster EKS
