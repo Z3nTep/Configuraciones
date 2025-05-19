@@ -78,8 +78,8 @@ aws ec2 create-tags --resources <subnet-id-1> <subnet-id-2> --tags Key=kubernete
 
 ## 4. Instala AWS Load Balancer Controller
 
-> **Este paso es fundamental para que el Ingress de tipo ALB funcione correctamente en EKS.  
-> Debe hacerse después de etiquetar las subredes y de instalar el cert-manager.**
+**Este paso es fundamental para que el Ingress de tipo ALB funcione correctamente en EKS.  
+Debe hacerse después de etiquetar las subredes y de instalar el cert-manager.**
 
 ```
 curl -Lo aws-load-balancer-controller.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.11.0/v2_11_0_full.yaml
