@@ -298,4 +298,6 @@ kubectl delete pod -l app.kubernetes.io/component=jvb
 ```
 
 ---
-```
+---
+
+## Felicidades, has terminado con la configuración.
