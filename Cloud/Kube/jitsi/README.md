@@ -272,6 +272,15 @@ kubectl get pvc
 kubectl get ingress
 ```
 
+
+Así es como debería verse el resultado del comando `kubectl get ingress`:
+
+```
+NAME                        CLASS    HOSTS                   ADDRESS                                                                 PORTS     AGE
+cm-acme-http-solver-bpksr   <none>   jitsi.sub.idumont.cat                                                                           80        150m
+jitsi-web-ingress           alb      jitsi.sub.idumont.cat   k8s-default-jitsiweb-ca10227f9a-398667594.us-east-1.elb.amazonaws.com   80, 443   150m
+```
+
 Si no aparece el Ingress, ejecuta:
 
 ```
