@@ -12,9 +12,10 @@ services:
       - TZ=Europe/Madrid
       - SERVERURL=z3ncloud.duckdns.org
       - SERVERPORT=51820
-      - PEERS=${MAX_PEERS:-3}
-      - PEERDNS=${DNS_IP:-5.0.0.2}:5353
-      - INTERNAL_SUBNET=${VPN_SUBNET:-55.0.0.0}
+      - PEERS=3
+      - PEERDNS=5.0.0.2
+      - INTERNAL_SUBNET=55.0.0.0
+      - ALLOWEDIPS=0.0.0.0/0, ::/0
     volumes:
       - ./wireguard/config:/config
       - /lib/modules:/lib/modules:ro
@@ -24,34 +25,43 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     networks:
       vpnnet:
-        ipv4_address: 5.0.0.3
+        ipv4_address: 5.0.0.3  
 
   adguard:
     container_name: adguard
     image: adguard/adguardhome
     restart: unless-stopped
+    hostname: adguard
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1 # Points to unbound
+    environment:
+      TZ: "Europe/London"
+      WEBPASSWORD: "" # B lank password - Can be whatever you want.
+      ServerIP: 5.0.0.1 # Internal IP of pihole
+      DNS1: 1.1.1.1 # Unbound IP
+      DNS2: 1.1.1.1 # If we don't specify two, it will auto pick google.
     ports:
-      - 5353:53/tcp
-      - 5353:53/udp
-      - 443:443
+      # 53:53/tcp
+      # 53:53/udp
+      - 8443:443
       - 8081:80
       - 3000:3000/tcp
     volumes:
       - ./adguard/work:/opt/adguardhome/work
       - ./adguard/conf:/opt/adguardhome/conf
+    depends_on: [wireguard]
     networks:
       vpnnet:
-        ipv4_address: ${DNS_IP:-5.0.0.2}
-    depends_on:
-      - wireguard
+        ipv4_address: 5.0.0.2
 
   nginx:
     container_name: nginx
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - 8080:80
-      - 8443:443
+      - 80:80
+      - 443:443
     volumes:
       - ./nginx/config:/etc/nginx/conf.d
       - ./nginx/web-sites:/usr/share/nginx/html
@@ -60,9 +70,8 @@ services:
         ipv4_address: 5.0.0.4
 
 networks:
-  vpnnet:
+  Z3nNet:
     driver: bridge
     ipam:
       config:
-        - subnet: ${VPN_SUBNET:-5.0.0.0}/24
-        - subnet: ${VPN_SUBNET:-5.0.0.0}/24
+        - subnet: 5.0.0.0/24
