@@ -59,47 +59,5 @@ server {
 }
 EOF
 
-# Copiar archivos de configuración
-echo "Copiando archivos de configuración..."
-cp docker-compose.yml ~/z3ndns/
-cp .env ~/z3ndns/
-
-# Crear script para actualizar configuración WireGuard
-echo "Creando script para configuración de WireGuard..."
-cat > ~/z3ndns/configure-wireguard.sh << 'EOF'
-#!/bin/bash
-
-# Esperar a que los contenedores estén en funcionamiento
-echo "Esperando a que los servicios estén en línea..."
-sleep 15
-
-echo "Configurando WireGuard..."
-cd ~/z3ndns
-
-# Asegurarse de que WireGuard use AdGuard como DNS
-source .env
-docker-compose restart wireguard
-
-echo "Configuración completada."
-echo ""
-echo "Los archivos de configuración para tus clientes están en:"
-echo "~/z3ndns/wireguard/config/peer1/"
-echo "~/z3ndns/wireguard/config/peer2/"
-echo "~/z3ndns/wireguard/config/peer3/"
-echo ""
 echo "Puedes ver los códigos QR con: docker exec -it wireguard /app/show-peer <número>"
-echo "Ejemplo: docker exec -it wireguard /app/show-peer 1"
-EOF
-
-chmod +x ~/z3ndns/configure-wireguard.sh
-
-echo "Instalación completada."
-echo ""
-echo "Para iniciar los servicios, ejecuta:"
-echo "cd ~/z3ndns && docker-compose up -d"
-echo ""
-echo "Después, ejecuta el script de configuración:"
-echo "~/z3ndns/configure-wireguard.sh"
-echo ""
-echo "No olvides actualizar tu token en el script update-duckdns.sh"
-echo "y programar una tarea cron para mantener actualizada tu IP pública."
+echo "Ejemplo: docker exec -it wireguard /app/show-peer 1" 
