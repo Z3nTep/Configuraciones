@@ -20,4 +20,3 @@ sudo certbot certonly --standalone -d tu-dominio.com --non-interactive --agree-t
 sudo mkdir -p n8n-certs
 sudo cp /etc/letsencrypt/live/tu-dominio.com/fullchain.pem /etc/letsencrypt/live/tu-dominio.com/privkey.pem n8n-certs/
 ```
-```
