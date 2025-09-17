@@ -1,8 +1,5 @@
 # Para instalar docker seguir estos comandos:
 
----
----
-
 ## 1. Actualizamos los repositorios:
 
 ```
