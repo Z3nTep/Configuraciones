@@ -129,8 +129,8 @@ kubectl apply -f aws-load-balancer-controller.yaml
 ## 5. Aplica los manifiestos de Ingress y Cert Manager
 
 ```
-kubectl apply -f ingress-issuer.yml 
 kubectl apply -f alb-ingressclass.yml
+kubectl apply -f ingress-issuer.yml 
 ```
 
 ---
@@ -310,3 +310,4 @@ kubectl delete pod -l app.kubernetes.io/component=jvb
 ---
 
 ## Felicidades, has terminado con la configuración.
+
