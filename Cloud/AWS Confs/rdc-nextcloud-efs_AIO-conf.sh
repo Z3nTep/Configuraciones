@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Actualizar e instalar paquetes necesarios para Nextcloud y EFS
+sudo apt update
+sudo apt install -y apache2 \
+    libapache2-mod-php \
+    ghostscript \
+    mysql-client \
+    php \
+    php-bcmath \
+    php-curl \
+    php-gd \
+    php-gmp \
+    php-intl \
+    php-json \
+    php-mbstring \
+    php-mysql \
+    php-xml \
+    php-zip \
+    php-imagick \
+    php-redis \
+    zip \
+    nfs-common \
+	bzip2 \
+	unzip
+
+# Configuración del almacenamiento EFS
+# Cambia esta variable por la URL de tu EFS cuando la tengas:
+unitat_compartida=fs-0da6882739cd7ba8e.efs.us-east-1.amazonaws.com:/
+punt_de_muntatge=/srv/www
+sudo mkdir -p $punt_de_muntatge
+
+sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $unitat_compartida $punt_de_muntatge
+
+# Añadir EFS al fstab para montar automáticamente en reinicios
+grep $unitat_compartida /etc/fstab || echo "$unitat_compartida $punt_de_muntatge nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0" | sudo tee -a /etc/fstab
+
+# Descargar Nextcloud si no está ya en el EFS
+if [ ! -d /srv/www/nextcloud ]; then
+    sudo wget https://download.nextcloud.com/server/releases/latest.zip -P /srv/www
+    sudo unzip /srv/www/latest.zip -d /srv/www
+	sudo chown -R www-data:www-data /srv/www/nextcloud
+	sudo rm /srv/www/latest.zip
+fi
+
+# Crear base de datos y usuario en RDS (rellena tu endpoint, usuario y claves)
+# Cambia estas variables cuando crees la RDS:
+DB_NAME=nextclouddb
+DB_USER=ncadmin
+DB_PASS='contrasenya123'
+DB_HOST=bbdd-allinuno.clme2808cgr6.us-east-1.rds.amazonaws.com
+
+tee crea-nextcloud-db.sql <<EOF
+CREATE DATABASE $DB_NAME;
+CREATE USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
+FLUSH PRIVILEGES;
+exit
+EOF
+
+cat crea-nextcloud-db.sql | sudo mysql -u admin -pcontrasenya123 -h $DB_HOST
+
+# Crear archivo VirtualHost de Apache para Nextcloud
+sudo tee /etc/apache2/sites-available/nextcloud.conf << EOF
+<VirtualHost *:80>
+    DocumentRoot /srv/www/nextcloud
+    <Directory /srv/www/nextcloud/>
+        Options +FollowSymlinks
+        AllowOverride All
+        Require all granted
+        <IfModule mod_dav.c>
+          Dav off
+        </IfModule>
+        SetEnv HOME /srv/www/nextcloud
+        SetEnv HTTP_HOME /srv/www/nextcloud
+    </Directory>
+</VirtualHost>
+EOF
+
+sudo a2ensite nextcloud
+sudo a2enmod rewrite headers env dir mime setenvif ssl
+sudo a2dissite 000-default
+sudo service apache2 reload
+
+# Asigna los permisos correctos
+sudo chown -R www-data:www-data /srv/www/nextcloud
+
+# Configuración PHP recomendada para Nextcloud
+sudo sed -i 's/memory_limit = .*/memory_limit = 1024M/' /etc/php/*/apache2/php.ini
+sudo sed -i 's/upload_max_filesize = .*/upload_max_filesize = 1G/' /etc/php/*/apache2/php.ini
+sudo sed -i 's/post_max_size = .*/post_max_size = 1G/' /etc/php/*/apache2/php.ini
+sudo sed -i 's/;date.timezone =/date.timezone = Europe\/Madrid/' /etc/php/*/apache2/php.ini
+
+sudo systemctl restart apache2
