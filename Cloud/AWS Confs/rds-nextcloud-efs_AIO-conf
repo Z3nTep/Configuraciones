@@ -28,7 +28,7 @@ sudo apt install -y apache2 \
 DB_USER=ncadmin
 DB_PASS='contrasenya123'
 DB_NAME=nextclouddb
-DB_HOST=nc-basededatosparaelnextcloud.clme2808cgr6.us-east-1.rds.amazonaws.com
+DB_HOST=nextcloud-databasexxxxxxxxxxxxx.clme2808cgr6.us-east-1.rds.amazonaws.com
 
 tee crea-nextcloud-db.sql <<EOF
 CREATE DATABASE IF NOT EXISTS $DB_NAME;
@@ -40,7 +40,7 @@ EOF
 cat crea-nextcloud-db.sql | sudo mysql -u admin -pcontrasenya123 -h $DB_HOST
 
 # Configuración del almacenamiento EFS
-unitat_compartida=fs-082deb8af14b3d929.efs.us-east-1.amazonaws.com:/
+unitat_compartida=fs-xxxxxxxxxxxx.efs.us-east-1.amazonaws.com:/
 punt_de_muntatge=/var/www
 sudo mkdir -p $punt_de_muntatge
 
@@ -57,16 +57,13 @@ if [ ! -d /var/www/nextcloud ]; then
 fi
 
 # Crear directorio data y asignar permisos
-sudo mkdir -p /var/www/data
 sudo chown -R www-data:www-data /var/www
-sudo find /var/www -type d -exec chmod 750 {} \;
-sudo find /var/www -type f -exec chmod 640 {} \;
 
 # Crear archivo VirtualHost de Apache para Nextcloud
 sudo tee /etc/apache2/sites-available/nextcloud.conf << EOF
 <VirtualHost *:80>
     DocumentRoot /var/www/nextcloud/
-    <Directory /var/www/nextcloud/>
+    <Directory /var/www/nextcloud>
         Options +FollowSymlinks
         AllowOverride All
         Require all granted
@@ -97,10 +94,13 @@ cd /var/www/nextcloud
 
 sudo -u www-data php occ maintenance:install \
   --database "mysql" \
-  --database-name "$DB_NAME" \
-  --database-user "$DB_USER" \
-  --database-pass "$DB_PASS" \
-  --database-host "$DB_HOST" \
-  --admin-user "admin" \
-  --admin-pass "admin_password" \
-  --data-dir "/var/www/data"
+  --database-name $DB_NAME \
+  --database-user $DB_USER \
+  --database-pass $DB_PASS \
+  --database-host $DB_HOST \
+  --admin-user "admin3" \
+  --admin-pass "admin_password"
+
+# Añadir IP o dominio a trusted_domains
+sudo -u www-data php occ config:system:set trusted_domains 1 --value="localhost"
+sudo -u www-data php occ config:system:set trusted_domains 2 --value="nc-ec2.aws.z3nwary.com"
