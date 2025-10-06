@@ -1,0 +1,117 @@
+1. Creamos la VPC para la infraestructura (wp-ec2-vpc)
+	1. Marcamos la opción de VPC y mas
+	2. La llamaremos wp-ec2-vpc
+	3. Le indicamos que tenga dos AZ (Zonas de Disponibilidad)
+	4. Después 2 subredes públicas y 4 privadas
+	5. Finalmente marcamos la opción de una NAT por cada AZ.
+
+2. Ahora los grupos de seguridad con las siguientes características:
+	1. wp-ec2-g-alb (balanceador de carga)
+		Entrante:
+			- 0.0.0.0/0 a HTTP
+			- 0.0.0.0/0 a HTTPS
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+			
+	2. wp-ec2-g-ec2 (instancias)
+		Entrante:
+			- wp-ec2-alb a HTTP
+			- wp-ec2-alb a HTTPS
+			- wp-ec2-rds a MYSQL/Aurora
+			- wp-ec2-nfs a wp-ec2-g-ec2
+						   nfs-id
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+
+	3. wp-ec2-g-rds (base de datos rds)
+		Entrante:
+			- wp-ec2-g-ec2 a MYSQL/Aurora
+		Saliente:
+			- 0.0.0.0/0 a MYSQL/Aurora
+			
+3. Creamos la RDS (wp-ec2-rds)
+	1. La ponemos en la VPC wp-ec2-vpc
+	2. Desmarcamos la opción de exponerla a internet
+	3. La metemos únicamente al SG (Security Group) de wp-ec2-g-rds
+
+4. Creamos el EFS (wp-ec2-efs)
+	1. Lo nombramos como wp-ec2-efs
+	2. Le indicamos que se cree en la VPC wp-ec2-vpc
+	3. Una vez se termine de configurar todo entramos al efs y vamos a red, aquí dentro debemos de:
+		Cambiar los grupos que tengan acceso a este (refiriéndome a quienes tendrán acceso al efs que acabamos de crear).
+			1. Quitamos el SG "Default"
+			2. Añadimos a las dos zonas el SG "wp-ec2-g-ec2"
+
+5. Creamos la EC2 (wp-ec2-ec2)
+	1. La nombramos wp-ec2-ec2
+	2. Usamos la imagen de ubuntu
+	3. En Redes le damos a Edit y seguimos los siguientes pasos:
+		- Cambiamos la VPC por la nuestra (wp-ec2-vpc)
+		- Le indicamos que la EC2 debe estar en una subred privada
+			· Ej: private1 o private2
+		- Desactivamos la asignación de IP pública.
+		- Cambiamos su grupo de Default a wp-ec2-g-ec2
+	4. Para la instalación automatizada:
+		- Expandimos la pestaña de Detalles Avanzados
+		- Bajamos hasta abajo del todo
+		- En el apartado de User-Data pegamos la plantilla esta: https://github.com/Z3nTep/Configuraciones/blob/main/Cloud/AWS%20Confs/rds-wp-efs_AIO-conf
+		- Cambiamos los valores de las variables por los valores de nuestro, tanto RDS, como EFS.
+		- También cambiar la URL en la línea 14 por la de nuestro RDS
+		- Además de cambiarla también en la linea 96 y poner un \ delante de cada . de la URL
+	5. Le damos a lanzar instancia
+
+6. Creamos el target group (wp-ec2-tg)
+	1. En la primera parte indicamos lo siguiente:
+		- Le decimos que sea de tipo Instancias
+		- Lo llamamos wp-ec2-tg
+		- Le cambiamos la VPC por la nuestra (wp-ec2-vpc)
+	2. En la segunda parte:
+		- Marcamos nuestra instancia y le damos a Include as pending below
+		- Y le damos a crear
+
+7. Configuramos el HTTPS
+	1. Entramos a Zonas hospedadas dentro del servicio Route53
+	2. Creamos una zona hospedada
+		- Escribimos el nombre de nuestro dominio añadiéndole un subdominio.
+			· aws.midominio.com
+	3. Una vez creado, copiamos una de las direcciones NS que aparecen el registro tipo NS de nuestro subdominio.
+		- Y dentro de nuestro dominio, creamos un registro NS que apunte de aws.midominio.com a la URL que nos da el Route53
+			· Ej: aws.midominio.com se asocie a ns-123.awsdns-12.net
+	4. Ahora nos iremos al servicio Certificate Manager
+		- Aquí le damos a, solicitar un nuevo certificado
+		- Dejamos marcado que sea público
+		- Escribimos el nombre de nuestro, en mi caso lo asociaré a un CNAME que nombraré como wordpress.aws.midominio.com
+			· Por lo tanto lo llamaré así, wordpress.aws.midominio.com
+		- Dejamos el resto de opciones por defecto y le damos a solicitar
+		- Nos esperamos unos segundos a que cargue el certificado y dentro de la tabla Domains le damos a Crear registro en Route53
+			· Aquí dejamos marcado el dominio que sale y le damos a Crear registro
+		- Nos esperamos un minuto y recargamos la página para ver que el estado pasa de pendiente de validación a Verificado
+		
+8. Creamos el Load Balancer (wp-ec2-alb)
+	1. Seleccionamos el Load Balancer tipo aplicación
+		- Balanceador de Carga de tipo Aplicación (alb)
+	2. Lo nombramos como wp-ec2-alb
+	3. Que sea expuesto a internet
+	4. Marcamos nuestra VPC (wp-ec2-vpc)
+	5. Marcamos las zonas a las que queremos que acceda, las dos zonas de disponibilidad en mi caso
+		- Dentro de estas debemos de asegurarnos que sean subredes públicas, ej:
+			· public1 y public2
+	6. Le asignamos el SG
+		- wp-ec2-g-alb 
+		- Y desmarcamos el SG default
+	7. En grupos de escucha y enrutamiento:
+		1. Primer agente de escucha (HTTP)
+			- Dejamos el protocolo HTTP
+			- Seleccionamos el TG que creamos anteriormente (el único que existe)
+		2. Segundo agente de escucha (HTTPS)
+		   En el caso que queramos añadirlo deberemos de tener creado el certificado de ACM
+			- Cambiamos el protocolo de HTTP a HTTPS
+			- Seleccionamos el grupo creado anteriormente
+			- Aparacerá debajo una sección nueva en la cual haremos:
+				· Dejamos marcada la opción de Desde ACM y seleccionaremos el certificado creado en ACM
+					· En mi caso el certificado sería: wordpress.aws.midominio.com
+	8. Creamos el balanceador de carga
+
+9. Para finalizar, crearemos un CNAME en nuestro Route53
+	- Lo llamaré wordpress, el resto de la url es automático ya que es la zona hospedada
+	- Y como valor pegaré la url pública que me devuelve el Load Balancer (balanceador de carga)
