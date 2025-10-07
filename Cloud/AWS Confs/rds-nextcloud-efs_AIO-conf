@@ -28,19 +28,23 @@ sudo apt install -y apache2 \
 DB_USER=ncadmin
 DB_PASS='contrasenya123'
 DB_NAME=nextclouddb
-DB_HOST=nextcloud-databasexxxxxxxxxxxxx.clme2808cgr6.us-east-1.rds.amazonaws.com
+DB_HOST=nc-rds-instance-1.clme2808cgr6.us-east-1.rds.amazonaws.com
 
 tee crea-nextcloud-db.sql <<EOF
-CREATE DATABASE IF NOT EXISTS $DB_NAME;
-CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
+CREATE DATABASE $DB_NAME;
+CREATE USER $DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
 FLUSH PRIVILEGES;
 EOF
 
-cat crea-nextcloud-db.sql | sudo mysql -u admin -pcontrasenya123 -h $DB_HOST
+# Opcional: solo crear DB si no existe (aunque el SQL ya usa IF NOT EXISTS)
+if ! mysql -u admin -pcontrasenya123 -h "$DB_HOST" -e "USE $DB_NAME" 2>/dev/null; then
+    echo "Creando base de datos en RDS..."
+    cat crea-nextcloud-db.sql | mysql -u admin -pcontrasenya123 -h "$DB_HOST"
+fi
 
 # Configuración del almacenamiento EFS
-unitat_compartida=fs-xxxxxxxxxxxx.efs.us-east-1.amazonaws.com:/
+unitat_compartida=fs-01661b1b49cae127e.efs.us-east-1.amazonaws.com:/
 punt_de_muntatge=/var/www
 sudo mkdir -p $punt_de_muntatge
 
@@ -57,7 +61,7 @@ if [ ! -d /var/www/nextcloud ]; then
 fi
 
 # Crear directorio data y asignar permisos
-sudo chown -R www-data:www-data /var/www
+sudo chown -R www-data:www-data /var/www/nextcloud
 
 # Crear archivo VirtualHost de Apache para Nextcloud
 sudo tee /etc/apache2/sites-available/nextcloud.conf << EOF
@@ -92,15 +96,39 @@ sudo systemctl restart apache2
 # Instalar Nextcloud via occ
 cd /var/www/nextcloud
 
-sudo -u www-data php occ maintenance:install \
-  --database "mysql" \
-  --database-name $DB_NAME \
-  --database-user $DB_USER \
-  --database-pass $DB_PASS \
-  --database-host $DB_HOST \
-  --admin-user "admin3" \
-  --admin-pass "admin_password"
+# 🔍 Verificar si Nextcloud ya está instalado (config.php existe)
+if [ ! -f "config/config.php" ]; then
+    ADMIN_USER="admin3"
+	ADMIN_PASS="contrasenya123"
+	
+    echo "Instalando Nextcloud por primera vez..."
+    sudo -u www-data php occ maintenance:install \
+      --database "mysql" \
+      --database-name "$DB_NAME" \
+      --database-user "$DB_USER" \
+      --database-pass "$DB_PASS" \
+      --database-host "$DB_HOST" \
+      --admin-user "$ADMIN_USER" \
+      --admin-pass "$ADMIN_PASS"
 
-# Añadir IP o dominio a trusted_domains
-sudo -u www-data php occ config:system:set trusted_domains 1 --value="localhost"
-sudo -u www-data php occ config:system:set trusted_domains 2 --value="nc-ec2.aws.z3nwary.com"
+    # Configurar trusted_domains solo en primera instalación
+    sudo -u www-data php occ config:system:set trusted_domains --value '["localhost","nc-ec2.aws.z3nwary.com"]' --type=json
+
+    DATA_DIR="/var/www/nextcloud/data/$ADMIN_USER"
+    # Asegurar directorio 'files' del admin
+    if [ ! -d "$DATA_DIR/files" ]; then
+        sudo mkdir -p "$DATA_DIR/files"
+        sudo chown -R www-data:www-data "$DATA_DIR"
+        sudo chmod 750 "$DATA_DIR/files"
+    fi
+
+    # Escanear para inicializar
+    sudo -u www-data php occ files:scan --all
+
+else
+    echo "Nextcloud ya está instalado en EFS. Saltando instalación..."
+fi
+
+sudo -u www-data php occ config:system:set system.filelocking.enabled --value="false" --type=boolean
+
+sudo systemctl restart apache2
