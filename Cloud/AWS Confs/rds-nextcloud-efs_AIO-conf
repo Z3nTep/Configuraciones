@@ -32,7 +32,7 @@ DB_HOST=nc-rds-instance-1.clme2808cgr6.us-east-1.rds.amazonaws.com
 
 tee crea-nextcloud-db.sql <<EOF
 CREATE DATABASE $DB_NAME;
-CREATE USER $DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
+CREATE USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
 FLUSH PRIVILEGES;
 EOF
