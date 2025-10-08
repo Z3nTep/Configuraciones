@@ -1,0 +1,167 @@
+1. Creamos la VPC para la infraestructura (wp-ecs-vpc)
+	1. Marcamos la opción de VPC y mas
+	2. La llamaremos wp-ecs-vpc
+	3. Le indicamos que tenga dos AZ (Zonas de Disponibilidad)
+	4. Asignaremos:
+		- 2 Subredes públicas
+		- 4 Subredes privadas
+	5. Finalmente marcamos la opción de una NAT por cada AZ.
+
+2. Ahora los grupos de seguridad con las siguientes características:
+	1. wp-ecs-g-alb (balanceador de carga)
+		Entrante:
+			- 0.0.0.0/0 a HTTP
+			- 0.0.0.0/0 a HTTPS
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+			
+	2. wp-ecs-g-ecs (instancias)
+		Entrante:
+			- wp-ecs-alb a HTTP
+			- wp-ecs-alb a HTTPS
+			- wp-ecs-rds a MYSQL/Aurora
+			- wp-ecs-nfs a wp-ecs-g-ecs
+						         nfs-id
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+
+	3. wp-ecs-g-rds (base de datos rds)
+		Entrante:
+			- wp-ecs-g-ecs a MYSQL/Aurora
+		Saliente:
+			- wp-ecs-g-ecs a MYSQL/Aurora
+			
+3. Creamos la RDS (wp-ecs-rds)
+	1. Creamos una SG (Subnet Group)
+		- La llamaremos: 
+			· wp-ecs-sg-rds
+		- En descripcion podemos escribir algo aleatorio: 
+			· Ej: Albion Online es un MMORPG no lineal en el que...
+		- Escogemos nuestra vpc: 
+			· wp-ecs-vpc
+		- En las AZ (Availability Zones) escogemos:
+			· us-east-1a
+			· us-east-1b
+		- En subredes:
+			· private3
+			· private4
+			
+	2. Creamos la Base de datos
+		- La ponemos en la VPC wp-ecs-vpc
+		- Desmarcamos la opción de exponerla a internet
+		- La metemos únicamente al SG (Security Group) de wp-ecs-g-rds
+
+4. Creamos el EFS (wp-ecs-efs)
+	1. Lo nombramos como wp-ecs-efs
+	2. Le indicamos que se cree en la VPC wp-ecs-vpc
+	3. Una vez se termine de configurar todo entramos al efs y vamos a red, aquí dentro debemos de:
+		Cambiar los grupos que tengan acceso a este (refiriéndome a quienes tendrán acceso al efs que acabamos de crear).
+			1. Quitamos el SG "Default"
+			2. Añadimos a las dos zonas el SG "wp-ecs-g-ecs"
+
+5. Creamos el target group (wp-ecs-tg)
+	1. En la primera parte indicamos lo siguiente:
+		- Le decimos que sea de tipo IPs
+		- Lo llamamos wp-ecs-tg
+		- Le cambiamos la VPC por la nuestra (wp-ecs-vpc)
+		- Dentro de Health Checks escribimos la ruta:
+			· /index.php (esto es para evitar que el cluster detenga y arranque contenedores nuevos)
+	2. En la segunda parte:
+		- Añadimos un ip temporal para poder crear el grupo	
+			· Ej: 10.0.0.184
+		- Le damos a Include as pending below
+		- Y le damos a crear
+	3. Ahora debemos borrar la ip temporal que escribimos
+
+6. Configuramos el HTTPS
+	1. Entramos a Zonas hospedadas dentro del servicio Route53
+	2. Creamos una zona hospedada
+		- Escribimos el nombre de nuestro dominio añadiéndole un subdominio.
+			· aws.midominio.com
+	3. Una vez creado, copiamos una de las direcciones NS que aparecen el registro tipo NS de nuestro subdominio.
+		- Y dentro de nuestro dominio, creamos un registro NS que apunte de aws.midominio.com a la URL que nos da el Route53
+			· Ej: aws.midominio.com se asocie a ns-123.awsdns-12.net
+	4. Ahora nos iremos al servicio Certificate Manager
+		- Aquí le damos a, solicitar un nuevo certificado
+		- Dejamos marcado que sea público
+		- Escribimos el nombre de nuestro, en mi caso lo asociaré a un CNAME que nombraré como wp-ecs.aws.midominio.com
+			· Por lo tanto lo llamaré así, wp-ecs.aws.midominio.com
+		- Dejamos el resto de opciones por defecto y le damos a solicitar
+		- Nos esperamos unos segundos a que cargue el certificado y dentro de la tabla Domains le damos a Crear registro en Route53
+			· Aquí dejamos marcado el dominio que sale y le damos a Crear registro
+		- Nos esperamos un minuto y recargamos la página para ver que el estado pasa de pendiente de validación a Verificado
+		
+7. Creamos el Load Balancer (wp-ecs-alb)
+	1. Seleccionamos el Load Balancer tipo aplicación
+		- Balanceador de Carga de tipo Aplicación (alb)
+	2. Lo nombramos como wp-ecs-alb
+	3. Que sea expuesto a internet
+	4. Marcamos nuestra VPC (wp-ecs-vpc)
+	5. Marcamos las zonas a las que queremos que acceda, las dos zonas de disponibilidad en mi caso
+		- Dentro de estas debemos de asegurarnos que sean subredes públicas, ej:
+			· public1 y public2
+	6. Le asignamos el SG
+		- wp-ecs-g-alb 
+		- Y desmarcamos el SG default
+	7. En grupos de escucha y enrutamiento:
+		1. Primer agente de escucha (HTTP)
+			- Dejamos el protocolo HTTP
+			- Seleccionamos el TG que creamos anteriormente (el único que existe)
+		2. Segundo agente de escucha (HTTPS)
+		   En el caso que queramos añadirlo deberemos de tener creado el certificado de ACM
+			- Cambiamos el protocolo de HTTP a HTTPS
+			- Seleccionamos el grupo creado anteriormente
+			- Aparacerá debajo una sección nueva en la cual haremos:
+				· Dejamos marcada la opción de Desde ACM y seleccionaremos el certificado creado en ACM
+					· En mi caso el certificado sería: wordpress.aws.midominio.com
+	8. Creamos el balanceador de carga
+
+8. Creamos un CNAME en nuestro Route53
+	- Lo llamaré wordpress, el resto de la url es automático ya que es la zona hospedada
+	- Y como valor pegaré la url pública que me devuelve el Load Balancer (balanceador de carga)
+
+9. Creamos una nueva definición de tarea (lanza-wp)
+	1. La llamamos lanza-wp
+	2. Le indicamos que sera AWS Fargate
+	3. Asignaremos el LabRole tanto para la ejecución como para el rol de la tarea
+	4. Ahora definiremos al contenedor de la siguiente manera:
+		- Lo llamaremos wordpress
+		- Usaremos la imagen: wordpress:latest
+		- Le indicamos las siguientes variables de entorno:
+			· WORDPRESS_DB_HOST			wp-ecs-rds.clme2808cgr6.us-east-1.rds.amazonaws.com
+			· WORDPRESS_DB_NAME			wordpressdb01
+			· WORDPRESS_DB_USER			asix01
+			· WORDPRESS_DB_PASSWORD		Sup3rins3gura!
+		
+	5. Bajamos hasta Almacenamiento:
+		- Indicamos que es de tipo EFS
+		- Lo llamaremos efs-wordpress
+		- Seleccionamos el EFS que creamos previamente
+		- Dejamos que mapee por en el directorio raíz (/) del EFS
+		- Añadimos un punto de montaje de:
+			· Contenedor: 						wordpress 
+			· Volumen: 							efs-wordpress 
+			· Directorio dentro del contendor: 	/var/www/html/wp-content
+	
+10. Vamos a Clusters y creamos uno:
+	1. Lo poedmos llamar como queramos, en mi caso wp-ecs-cluster
+	2. Lo dejamos como Fargate only
+
+11. Una vez creado entramos y creamos un servicio:
+	1. Seleccionamos familia de definición de tarea lanza-wp
+	2. Que sea de tipo lanzamiento (launch)
+	3. Dentro de networking
+		- Indicamos nuestra vpc
+		- Seleccionamos las subredes privadas
+			· private1
+			· private2
+		- Escogemos el SG wp-ecs-g-ecs
+		- Desactivamos la asignación de ip pública
+	4. Vamos a la sección Balanceador de Carga
+		- Marcamos la casilla de Usar Load Balancer
+		- Seleccionaremos Usar uno ya existente
+			· Escogemos nuestro lb: wp-ecs-lb
+		- Usamos el Oiente ya existente
+		- Escogemos nuestro TG ya existente
+			· En mi caso: wp-ecs-tg
+		- Y le damos a crear
