@@ -2,7 +2,9 @@
 	1. Marcamos la opción de VPC y mas
 	2. La llamaremos wp-ec2-vpc
 	3. Le indicamos que tenga dos AZ (Zonas de Disponibilidad)
-	4. Después 2 subredes públicas y 4 privadas
+	4. Asignaremos:
+		- 2 Subredes públicas
+		- 4 Subredes privadas
 	5. Finalmente marcamos la opción de una NAT por cada AZ.
 
 2. Ahora los grupos de seguridad con las siguientes características:
@@ -27,12 +29,27 @@
 		Entrante:
 			- wp-ec2-g-ec2 a MYSQL/Aurora
 		Saliente:
-			- 0.0.0.0/0 a MYSQL/Aurora
+			- wp-ec2-g-ec2 a MYSQL/Aurora
 			
 3. Creamos la RDS (wp-ec2-rds)
-	1. La ponemos en la VPC wp-ec2-vpc
-	2. Desmarcamos la opción de exponerla a internet
-	3. La metemos únicamente al SG (Security Group) de wp-ec2-g-rds
+	1. Creamos una SG (Subnet Group)
+		- La llamaremos: 
+			· wp-ec2-sg-rds
+		- En descripcion podemos escribir algo aleatorio: 
+			· Ej: Albion Online es un MMORPG no lineal en el que...
+		- Escogemos nuestra vpc: 
+			· wp-ec2-vpc
+		- En las AZ (Availability Zones) escogemos:
+			· us-east-1a
+			· us-east-1b
+		- En subredes:
+			· private3
+			· private4
+			
+	2. Creamos la Base de datos
+		- La ponemos en la VPC wp-ec2-vpc
+		- Desmarcamos la opción de exponerla a internet
+		- La metemos únicamente al SG (Security Group) de wp-ec2-g-rds
 
 4. Creamos el EFS (wp-ec2-efs)
 	1. Lo nombramos como wp-ec2-efs
