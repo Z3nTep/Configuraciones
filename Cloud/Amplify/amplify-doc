@@ -1,0 +1,77 @@
+1. Configuramos el HTTPS
+	1. Entramos a Zonas hospedadas dentro del servicio Route53
+	2. Creamos una zona hospedada
+		- Escribimos el nombre de nuestro dominio añadiéndole un subdominio.
+			· aws.midominio.com
+	3. Una vez creado, copiamos una de las direcciones NS que aparecen el registro tipo NS de nuestro subdominio.
+		- Y dentro de nuestro dominio, creamos un registro NS que apunte de aws.midominio.com a la URL que nos da el Route53
+			· Ej: aws.midominio.com se asocie a ns-123.awsdns-12.net
+	4. Ahora nos iremos al servicio Certificate Manager
+		- Aquí le damos a, solicitar un nuevo certificado
+		- Dejamos marcado que sea público
+		- Escribimos el nombre de nuestro, en mi caso lo asociaré a un CNAME que nombraré como ampl.aws.midominio.com
+			· Por lo tanto lo llamaré así, ampl.aws.midominio.com
+		- Dejamos el resto de opciones por defecto y le damos a solicitar
+		- Nos esperamos unos segundos a que cargue el certificado y dentro de la tabla Domains le damos a Crear registro en Route53
+			· Aquí dejamos marcado el dominio que sale y le damos a Crear registro
+		- Nos esperamos un minuto y recargamos la página para ver que el estado pasa de pendiente de validación a Verificado
+
+2. Creamos un CNAME en nuestro Route53
+	- Lo llamaré ampl, el resto de la url es automático ya que es la zona hospedada
+	- Y como valor pegaré la url pública que me devuelve el Load Balancer (balanceador de carga)
+
+3. Guardamos la plantilla HTML
+	- Visitamos la página HTML5 UP: https://html5up.net/
+	- Escogemos cualquier plantilla y descargamos el .zip
+	- Ahora hay dos formas de hacerlo:
+		1. Con S3 Bucket (recomendado)
+			- Vamos al servicio S3 Buckets de AWS
+			- Creamos un Bucket
+				· Lo llamaremos ampl-s3-bucket- y añadimos texto aleatorio
+					· Ej: ewfxvrre
+					  Esto se debe a que los nombres de los buckets se comparten con toda la red de AWS
+					  y no solo con nuestro laboratorio privado, asi que, si se pone un nombre comun, es
+					  probable que coincida con un bucket ya existente por algun otro usuario de AWS
+				· Y le damos a Crear Bucket
+			- Una vez dentro el Bucket, le damos a cargar y agregamos el .zip
+			- Cuando se suba hacemos click en Cargar
+			
+		2. Guardarlo en un repositorio de GitHub
+			- Creamos nuestro repositoio
+			- Entramos en él
+			- Y subimos en la ruta que queramos guardar la plantilla el .zip
+
+4. Creamos el Amplify
+	1. Visitamos el servicio Amplify
+	2. Le damos a Crear Aplicación
+		- La llamaremos Amplify-Test
+	3. Escogemos Despliegue sin Git
+	4. Y aquí tenemos dos formas diferentes:
+		1. Escogemos el Bucket S3 (recomendado)
+			- Click en Navegar por S3
+			- Y seleccionamos el fichero .zip de la plantilla HTML
+		2. Escogemos Cualquier URL
+			- Entramos en nuestro repositoio de GitHub
+			- Hacemos click en el .zip
+			- Click derecho en el texto Raw que aparece al lado del botón descargar
+			- Copiamos el enlace
+			- Y lo pegamos en el campo de URL del Amplify
+	5. Le damos a Guardar y Desplegar
+
+5. Vinculamos el Amplify al Route53
+	1. Dentro de la aplicación nos vamos a:
+		- Menu vertical izquierdo --> Hospedaje --> Dominios personalizados
+	2. Hacemos click en Agregar Dominio
+	3. Seleccionamos nuestro dominio y le damos a Configurar
+	4. Configuramos los registros:
+		- Hacemos click en Excluir raíz
+		- Nombramos como ampl el subdominio de abajo, ya que debe llamarse como el certificado
+	6. Marcamos la casilla de SSL personalizado
+		- Y seleccionamos nuestro certificado SSL
+	7. Finalmente le damos a Agregar Dominio
+
+6. Ahora esperaremos a termine de configurarse
+	- Si se tiene el idioma en castellano, es posible que salga un texto de Agregue dominios
+	  Es un fallo de traducción, la configuración es automatizada y solo hay que esperar a
+	  que termine, en inglés dice Adding Domain
+	- Se puede ir comprobando si funciona la página web aunque no haya terminado de configurar
