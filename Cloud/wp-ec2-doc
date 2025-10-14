@@ -19,7 +19,6 @@
 		Entrante:
 			- wp-ec2-alb a HTTP
 			- wp-ec2-alb a HTTPS
-			- wp-ec2-rds a MYSQL/Aurora
 			- wp-ec2-nfs a wp-ec2-g-ec2
 						   nfs-id
 		Saliente:
@@ -132,3 +131,4 @@
 9. Para finalizar, crearemos un CNAME en nuestro Route53
 	- Lo llamaré wordpress, el resto de la url es automático ya que es la zona hospedada
 	- Y como valor pegaré la url pública que me devuelve el Load Balancer (balanceador de carga)
+
