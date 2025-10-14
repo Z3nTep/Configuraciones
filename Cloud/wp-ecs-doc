@@ -19,7 +19,6 @@
 		Entrante:
 			- wp-ecs-alb a HTTP
 			- wp-ecs-alb a HTTPS
-			- wp-ecs-rds a MYSQL/Aurora
 			- wp-ecs-nfs a wp-ecs-g-ecs
 						         nfs-id
 		Saliente:
