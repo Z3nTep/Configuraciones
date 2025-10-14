@@ -1,0 +1,191 @@
+1. Creamos la VPC para la infraestructura (wp-ae-vpc)
+	1. Marcamos la opción de VPC y mas
+	2. La llamaremos wp-ae-vpc
+	3. Le indicamos que tenga dos AZ (Zonas de Disponibilidad)
+	4. Asignaremos:
+		- 2 Subredes públicas
+		- 4 Subredes privadas
+	5. Finalmente marcamos la opción de una NAT por cada AZ.
+
+2. Ahora los grupos de seguridad con las siguientes características:
+	1. wp-ae-g-alb (balanceador de carga)
+		Entrante:
+			- 0.0.0.0/0 a HTTP
+			- 0.0.0.0/0 a HTTPS
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+			
+	2. wp-ae-g-ae (instancias)
+		Entrante:
+			- wp-ae-alb a HTTP
+			- wp-ae-alb a HTTPS
+			- wp-ae-rds a MYSQL/Aurora
+			- wp-ae-nfs a wp-ae-g-ae
+						   nfs-id
+		Saliente:
+			- 0.0.0.0/0 a ALL TRAFFIC
+
+	3. wp-ae-g-rds (base de datos rds)
+		Entrante:
+			- wp-ae-g-ae a MYSQL/Aurora
+		Saliente:
+			- wp-ae-g-ae a MYSQL/Aurora
+			
+3. Creamos la RDS (wp-ae-rds)
+	1. Creamos una SG (Subnet Group)
+		- La llamaremos: 
+			· wp-ae-sg-rds
+		- En descripcion podemos escribir algo aleatorio: 
+			· Ej: Albion Online es un MMORPG no lineal en el que...
+		- Escogemos nuestra vpc: 
+			· wp-ae-vpc
+		- En las AZ (Availability Zones) escogemos:
+			· us-east-1a
+			· us-east-1b
+		- En subredes:
+			· private3
+			· private4
+			
+	2. Creamos la Base de datos
+		- La ponemos en la VPC wp-ae-vpc
+		- Desmarcamos la opción de exponerla a internet
+		- La metemos únicamente al SG (Security Group) de wp-ae-g-rds
+
+4. Creamos el EFS (wp-ae-efs)
+	1. Lo nombramos como wp-ae-efs
+	2. Le indicamos que se cree en la VPC wp-ae-vpc
+	3. Una vez se termine de configurar todo entramos al efs y vamos a red, aquí dentro debemos de:
+		Cambiar los grupos que tengan acceso a este (refiriéndome a quienes tendrán acceso al efs que acabamos de crear).
+			1. Quitamos el SG "Default"
+			2. Añadimos a las dos zonas el SG "wp-ae-g-ae"
+
+5. Creamos una ec2 temporal (wp-ae-ec2_temp)
+	1. La nombramos wp-ae-ae
+	2. Usamos la imagen de ubuntu
+	3. En Redes le damos a Edit y seguimos los siguientes pasos:
+		- Cambiamos la VPC por la nuestra (wp-ae-vpc)
+		- Le indicamos que la ec2 debe estar en una subred privada
+			· Ej: private1 o private2
+		- Desactivamos la asignación de IP pública.
+		- Cambiamos su grupo de Default a wp-ae-g-ae
+	4. Para la instalación automatizada:
+		- Expandimos la pestaña de Detalles Avanzados
+		- Bajamos hasta abajo del todo
+		- En el apartado de User-Data pegamos la plantilla esta: https://github.com/Z3nTep/Configuraciones/blob/main/Cloud/AWS%20Confs/rds-wp-efs_AIO-conf
+		- Cambiamos los valores de las variables por los valores de nuestro, tanto RDS, como EFS.
+		- También cambiar la URL en la línea 14 por la de nuestro RDS
+		- Además de cambiarla también en la linea 96 y poner un \ delante de cada . de la URL
+	5. Le damos a lanzar instancia
+
+6. Creamos el target group (wp-ae-tg)
+	1. En la primera parte indicamos lo siguiente:
+		- Le decimos que sea de tipo Instancias
+		- Lo llamamos wp-ae-tg
+		- Le cambiamos la VPC por la nuestra (wp-ae-vpc)
+	2. En la segunda parte:
+		- Le damos a crear sin añadir ninguna
+
+7. Configuramos el HTTPS
+	1. Entramos a Zonas hospedadas dentro del servicio Route53
+	2. Creamos una zona hospedada
+		- Escribimos el nombre de nuestro dominio añadiéndole un subdominio.
+			· aws.midominio.com
+	3. Una vez creado, copiamos una de las direcciones NS que aparecen el registro tipo NS de nuestro subdominio.
+		- Y dentro de nuestro dominio, creamos un registro NS que apunte de aws.midominio.com a la URL que nos da el Route53
+			· Ej: aws.midominio.com se asocie a ns-123.awsdns-12.net
+	4. Ahora nos iremos al servicio Certificate Manager
+		- Aquí le damos a, solicitar un nuevo certificado
+		- Dejamos marcado que sea público
+		- Escribimos el nombre de nuestro, en mi caso lo asociaré a un CNAME que nombraré como wordpress.aws.midominio.com
+			· Por lo tanto lo llamaré así, wordpress.aws.midominio.com
+		- Dejamos el resto de opciones por defecto y le damos a solicitar
+		- Nos esperamos unos segundos a que cargue el certificado y dentro de la tabla Domains le damos a Crear registro en Route53
+			· Aquí dejamos marcado el dominio que sale y le damos a Crear registro
+		- Nos esperamos un minuto y recargamos la página para ver que el estado pasa de pendiente de validación a Verificado
+		
+8. Creamos el Load Balancer (wp-ae-alb)
+	1. Seleccionamos el Load Balancer tipo aplicación
+		- Balanceador de Carga de tipo Aplicación (alb)
+	2. Lo nombramos como wp-ae-alb
+	3. Que sea expuesto a internet
+	4. Marcamos nuestra VPC (wp-ae-vpc)
+	5. Marcamos las zonas a las que queremos que acceda, las dos zonas de disponibilidad en mi caso
+		- Dentro de estas debemos de asegurarnos que sean subredes públicas, ej:
+			· public1 y public2
+	6. Le asignamos el SG
+		- wp-ae-g-alb 
+		- Y desmarcamos el SG default
+	7. En grupos de escucha y enrutamiento:
+		1. Primer agente de escucha (HTTP)
+			- Dejamos el protocolo HTTP
+			- Seleccionamos el TG que creamos anteriormente (el único que existe)
+		2. Segundo agente de escucha (HTTPS)
+		   En el caso que queramos añadirlo deberemos de tener creado el certificado de ACM
+			- Cambiamos el protocolo de HTTP a HTTPS
+			- Seleccionamos el grupo creado anteriormente
+			- Aparacerá debajo una sección nueva en la cual haremos:
+				· Dejamos marcada la opción de Desde ACM y seleccionaremos el certificado creado en ACM
+					· En mi caso el certificado sería: wordpress.aws.midominio.com
+	8. Creamos el balanceador de carga
+
+9. Creamos un CNAME en nuestro Route53
+	- Lo llamaré wordpress, el resto de la url es automático ya que es la zona hospedada
+	- Y como valor pegaré la url pública que me devuelve el Load Balancer (balanceador de carga)
+	
+----------------------
+----------------------
+
+10. Creamos la imagen de la ec2_temp:
+	1. Dentro de instancias, marcamos la instancia (ec2_temp)
+	2. Luego hacemos click en:
+		- Acciones --> Imagen y plantillas --> Crear imagen
+	3. La llamamos wp-ac-iso y le damos a Crear imagen
+
+11. Creamos una plantilla de lanzamiento:
+	1. En el menu lateral izquierdo dentro de la sección instancias, le damos a:
+		- Plantillas de lanzamiento
+	2. En la descripción escribimos lo que sea, ej:
+		- Albion Online es un MMORPG no lineal en el tu escribes tu propia historia sin seguir un camin.......
+	3. Marcamos la casilla de abajo que dice:
+		- Proporcionar orientacion sobre Auto Scaling
+	4. Bajamos hasta la seccion de imagenes y seleccionamos Mis AMIs
+		- Se escoge automaticamente la unica AMI que hemos creado
+	5. Indicamos el tipo de instancia:
+		- t3.micro
+	6. No añadimos ni Claves SSH, ni Subred, ni AZ (Zona de Disponibilidad)
+	7. Ponemos el grupo de seguridad wp-ae-g-ae
+	8. Y creamos la plantilla
+	
+12. Creamos el grupo de autoescalado:
+	1. Primera sección:
+		1. Marcamos la plantilla que recien creamos
+		2. Y hacemos click en:
+			- Acciones --> Crear grupo de autoescalado
+	2. Segunda sección:
+		1. Lo nombramos como wp-ac-ac y le damos a siguiente
+		2. Seleccionamos nuetra VPC (wp-ac-vpc)
+		3. Seleccionamos las subredes:
+			- private1
+			- private2
+		4. Le damos a Siguiente
+	3. Tercera sección:
+		1. Asociamos a un LB existente
+		2. Escogemos nuestro grupo destino (wp-ag-tg)
+		3. Le damos a Siguiente
+	4. Cuarta sección:
+		1. Le indicamos:
+			- Cantidad deseada:	2
+			- Cantidad mínima:	2
+			- Cantidad máxima:	4
+		2. Escogemos Política de escalado
+			- La llamaremos wp-ac-politica
+			- Tipo de métrica: Uso promedio de la CPU
+			- Valor de destino: 60%
+			- Preparación de la instancia: No tocamos nada
+		3. Y le damos a Siguiente
+	5. Lo skipeamos dándole a Siguiente
+	6. Lo skipeamos dándole a Siguiente
+	7. Le damos a Crear Auto Scaling Group
+
+13. Ahora toca esperar a que el grupo de Auto Escalado cree las instancias
+	- Una vez creado, con la url del LB o del CNAME nuestro, podremos comprobar si carga el wp.
