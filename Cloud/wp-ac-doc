@@ -19,7 +19,6 @@
 		Entrante:
 			- wp-ae-alb a HTTP
 			- wp-ae-alb a HTTPS
-			- wp-ae-rds a MYSQL/Aurora
 			- wp-ae-nfs a wp-ae-g-ae
 						   nfs-id
 		Saliente:
