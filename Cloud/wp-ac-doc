@@ -160,7 +160,7 @@
 	1. Primera sección:
 		1. Marcamos la plantilla que recien creamos
 		2. Y hacemos click en:
-			- Acciones --> Crear grupo de autoescalado
+			- Acciones --> Crear Auto Scaling Group
 	2. Segunda sección:
 		1. Lo nombramos como wp-ac-ac y le damos a siguiente
 		2. Seleccionamos nuetra VPC (wp-ac-vpc)
