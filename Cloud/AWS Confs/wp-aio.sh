@@ -36,7 +36,7 @@ sudo mkdir -p /var/www/wordpress
 # Descargar WordPress si no existe
 if [ ! -d /var/www/wordpress/wp-admin ]; then
     curl -o /tmp/wordpress.tar.gz https://wordpress.org/latest.tar.gz
-    sudo tar zx -C /var/www --strip-components=1 -f /tmp/wordpress.tar.gz
+    sudo tar zx -C /var/www/wordpress --strip-components=1 -f /tmp/wordpress.tar.gz
     sudo chown -R www-data:www-data /var/www/wordpress
     rm /tmp/wordpress.tar.gz
 fi
