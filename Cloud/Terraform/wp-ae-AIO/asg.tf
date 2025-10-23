@@ -19,9 +19,6 @@ resource "aws_launch_template" "wp" {
   name          = "wp-ac-lt"
   image_id      = data.aws_ami.ubuntu.id
   instance_type = "t3.micro"
-  iam_instance_profile {
-    name = aws_iam_instance_profile.lab_profile.name
-  }
   vpc_security_group_ids = [aws_security_group.ec2.id]
   user_data = base64encode(data.template_file.user_data.rendered)
 
@@ -53,3 +50,4 @@ resource "aws_autoscaling_group" "wp" {
     propagate_at_launch = true
   }
 }
+
