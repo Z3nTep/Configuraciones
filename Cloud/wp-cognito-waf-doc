@@ -1,0 +1,107 @@
+# Es obligatorio tener el Wordpress con HTTPS, si no, no funcionará
+1. Configuramos la piscina de usuarios (Cognito)
+    1. Le damos a Crear Grupo de Usuarios
+        - Seleccionamos Aplicación Web Tradicional
+        - La llamaremos: wp-cog-app
+        - Marcamos:
+            · Nombre de usuario
+        - Como atributo necesario:
+            · Correo Electrónico
+        - Y como url de retorno, nuestro dominio wp
+            · Ej: wp.aws.midominio.com
+        - Y lo creamos
+        
+    2. En la descripción general del grupo de usuarios:
+        - Renombramos el nombre a: wp-cog-gu
+        
+    3. Habilitamos la página por defecto de loggin:
+        - Vamos a:
+            · Menú vertical izquierdo --> Creación de marca --> Dominio
+        - Le damos a editar en Dominio de Cognito
+        - Y marcamos la casilla Interfaz de Usuario Alojada
+    
+    5. Cambiamos las políticas del Grupo de Usuarios (opcional)
+        - Dentro de Autenticación, entramos a Métodos de Autenticación
+            1. Editamos Política de Contraseña
+                · Marcamos Personalizado
+                · Longitud mínima permitida (6 carácteres)
+                · Desmarcamos todos los Requisitos de Contraseña
+        - Dentro de Autenticación, entramos a Inicio de Sesión
+            1. Editamos Autenticación multifactor
+                · Hacemos click en editar
+                · Escogemos la opcion Sin MFA
+            2. Editamos Recuperación de Cuenta de Usuario
+                · Le damos a Editar
+                · Desmarcamos la opción, y guardamos cambios
+    
+    4. Creamos un usuario:
+        - Vamos a:
+            · Menú vertical izquierdo --> Administración de usuarios --> Usuarios
+        - Le damos a Crear Usuario
+            · Dejamos marcada las casillas:
+                1. No enviar una invitacion
+                2. Establecer una contraseña
+            · El nombre de usuario será: user1
+            · Y la contraseña: contra
+
+2. Configuramos Wordpress:
+    1. Instalamos el plugin OAuth Single Sign On - SSO (OAuth Client)
+    2. Dentro del plugin le damos a Add Aplicaction
+        - Escogemos Cognito y rellenamos los siguientes campos:
+            1. Pegamos el Client ID de la aplicación de Cognito 
+                · Vamos a App Clients --> Nuestra app (en mi caso: wp-cog-app)
+                · Aquí copiamos el ID de Cliente
+            2. Pegamos el Client Secret
+                · En la misma sección que el Client ID
+                · Copiamos el Client Secret
+            3. Es las 3 últimas URLs ponemos:
+                · https://nuestro.dominio.cognito.com/oauth2/authorize
+                · https://nuestro.dominio.cognito.com/oauth2/token
+                · https://nuestro.dominio.cognito.com/oauth2/userInfo               # Por defecto la ruta es /userInfo, no /oauth2/userInfo
+                    - Para el dominio de nuestro Grupo de Usuario hay que:
+                        · Ir a Dominio, dentro de Creación de Marca
+                        · Copiar la URL del Dominio
+            4. Le damos a Siguiente
+            5. En el test nos logueamos
+            6. Y ya estaría funcionando
+            
+3. Implementar WAF:
+    1. Dentro de nuestro Grupo de Usuarios vamos a:
+        - Menu vertical izquierdo --> Seguridad --> AWS WAF
+    2. Le damos a Editar
+    3. Marcamos la casilla de Usar WAF
+    4. Le damos a Crear ACL y seguimos los siguientes pasos:
+            1. Primera Sección:
+            1. Aquí le llamaremos: wp-cog-acl
+            2. En la tabla de abajo le damos a Añadir Recursos de AWS
+                - Seleccionamos Amazon Cognito
+                - Seleccionamos nuestro Grupo de Usuarios: wp-cog-gu
+                - Y le damos a Añadir
+            3. Ahora a siguiente
+            
+        2. Segunda Sección:
+            1 En Reglas, le damos a Añadir reglas --> Manage Rules
+            2. Desplegamos el menú de AWS Managed Rule Groups y marcamos las siguientes:
+                - Linux Operating System
+                - PHP Application
+                - SQL Database
+                - WordPress Application
+            3. Y le damos a Añadir reglas
+            4. Dejamos por defecto la acción de Permitir
+            5. Le damos a Siguiente
+            
+        3. Tercera Sección:
+            1. Le damos a Siguiente
+            
+        4. Cuarta Sección:
+            1. Lo dejamos por defecto todo
+            2. Le damos a Siguiente
+            
+        5. Quinta Sección:
+            2. Revisamos las configuraciones
+            1. Le damos a Create Web ACL
+    
+    5. Devuelta al Cognito
+        1. Actualizamos la lista de ACLs
+        2. Seleccionamos la que acabamos de crear
+        3. Y le damos a Guardar Cambios
