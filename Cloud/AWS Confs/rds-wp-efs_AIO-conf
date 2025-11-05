@@ -94,4 +94,7 @@ sudo -u www-data sed -i 's/username_here/asix01/' /srv/www/wordpress/wp-config.p
 sudo -u www-data sed -i 's/password_here/Sup3rins3gura!/' /srv/www/wordpress/wp-config.php;
 sudo -u www-data sed -i 's/localhost/efs24365\.cxtfe4jkj9h2\.us-east-1\.rds\.amazonaws\.com/' /srv/www/wordpress/wp-config.php;
 echo  "define('FS_METHOD', 'direct');" | sudo -u www-data tee -a /srv/www/wordpress/wp-config.php;
+
+# Añadir lógica para X-Forwarded-Proto (justo antes de la línea That's all, stop editing!)
+sudo -u www-data sed -i "/That's all, stop editing!/i if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {\n    \$_SERVER['HTTPS'] = 'on';\n}" /var/www/wordpress/wp-config.php
 fi
