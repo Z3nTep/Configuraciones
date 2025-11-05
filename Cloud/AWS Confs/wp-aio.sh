@@ -81,6 +81,9 @@ if [ ! -f /var/www/wordpress/wp-config.php ]; then
 
     # Permitir actualizaciones/plugins vía filesystem
     echo "define('FS_METHOD', 'direct');" | sudo -u www-data tee -a /var/www/wordpress/wp-config.php
+
+    # Añadir lógica para X-Forwarded-Proto (justo antes de la línea That's all, stop editing!)
+    sudo -u www-data sed -i "/That's all, stop editing!/i if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {\n    \$_SERVER['HTTPS'] = 'on';\n}" /var/www/wordpress/wp-config.php
 fi
 
 echo "✅ Instalación de WordPress completada. Accede desde tu navegador."
