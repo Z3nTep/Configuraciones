@@ -1,6 +1,6 @@
 services:
   wireguard:
-    container_name: wireguard
+    container_name: Z3nNet-wireguard
     image: linuxserver/wireguard
     restart: unless-stopped
     cap_add:
@@ -10,7 +10,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Madrid
-      - SERVERURL=z3ncloud.duckdns.org
+      - SERVERURL=midominio.com
       - SERVERPORT=51820
       - PEERS=3
       - PEERDNS=5.0.0.2
@@ -25,10 +25,10 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     networks:
       vpnnet:
-        ipv4_address: 5.0.0.3  
+        ipv4_address: 5.0.0.3
 
   adguard:
-    container_name: adguard
+    container_name: Z3nNet-adguard
     image: adguard/adguardhome
     restart: unless-stopped
     hostname: adguard
@@ -50,18 +50,19 @@ services:
     volumes:
       - ./adguard/work:/opt/adguardhome/work
       - ./adguard/conf:/opt/adguardhome/conf
-    depends_on: [wireguard]
     networks:
       vpnnet:
         ipv4_address: 5.0.0.2
+    depends_on: [wireguard]
+
 
   nginx:
-    container_name: nginx
+    container_name: Z3nNet-Nginx
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - 80:80
-      - 443:443
+      - 81:80
+      - 444:443
     volumes:
       - ./nginx/config:/etc/nginx/conf.d
       - ./nginx/web-sites:/usr/share/nginx/html
@@ -70,7 +71,7 @@ services:
         ipv4_address: 5.0.0.4
 
 networks:
-  Z3nNet:
+  vpnnet:
     driver: bridge
     ipam:
       config:
