@@ -6,14 +6,14 @@ provider "aws" {
 # 1. Route53: Zona hospedada
 #########################
 
-resource "aws_route53_zone" "sub_idumont_cat" {
-  name    = "sub.idumont.cat"
-  comment = "Zona hospedada pública para sub.idumont.cat"
+resource "aws_route53_zone" "sub_dominio_com" {
+  name    = "sub.dominio.com"
+  comment = "Zona hospedada pública para sub.dominio.com"
 }
 
 output "ns_servers" {
-  value       = aws_route53_zone.sub_idumont_cat.name_servers
-  description = "Servidores NS para delegar sub.idumont.cat en tu dominio principal"
+  value       = aws_route53_zone.sub_dominio_com.name_servers
+  description = "Servidores NS para delegar sub.dominio.com en tu dominio principal"
 }
 
 #########################
@@ -201,7 +201,7 @@ resource "aws_lb" "owncast" {
 #########################
 
 resource "aws_acm_certificate" "owncast" {
-  domain_name       = "owncast.sub.idumont.cat"
+  domain_name       = "owncast.sub.dominio.com"
   validation_method = "DNS"
   lifecycle {
     create_before_destroy = true
@@ -265,7 +265,7 @@ resource "aws_lb_listener" "https" {
 #########################
 
 resource "aws_route53_record" "owncast" {
-  zone_id = aws_route53_zone.sub_idumont_cat.zone_id
+  zone_id = aws_route53_zone.sub_dominio_com.zone_id
   name    = "owncast.sub.idumont.cat"
   type    = "A"
 
@@ -277,7 +277,7 @@ resource "aws_route53_record" "owncast" {
 }
 
 output "owncast_url_https" {
-  value = "https://owncast.sub.idumont.cat"
+  value = "https://owncast.sub.dominio.com"
   description = "Acceso seguro a Owncast"
 }
 
@@ -285,3 +285,4 @@ output "alb_dns" {
   value = aws_lb.owncast.dns_name
   description = "DNS público del ALB"
 }
+
