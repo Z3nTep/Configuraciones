@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Variables
-DOMAIN="idumont.lan"  # Cambiado a tu dominio
-EMAIL="root@idumont.lan"  # Cambiado a tu email
+DOMAIN="dominio.lan"  # Cambiado a tu dominio
+EMAIL="root@dominio.lan"  # Cambiado a tu email
 APACHE_LOG_DIR="/var/log/apache2"
 
 # Crear el directorio del sitio y el archivo index.html
