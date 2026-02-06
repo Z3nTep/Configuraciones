@@ -5,7 +5,7 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: idumont.personal@gmail.com # Cambia esto por tu correo real
+    email: tu.correo@dominio.com # Cambia esto por tu correo real
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
@@ -45,4 +45,5 @@ spec:
               service:
                 name: myfreepbx-web # Cambia por el nombre real de tu servicio
                 port:
+
                   number: 80
