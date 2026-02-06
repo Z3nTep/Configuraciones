@@ -5,7 +5,7 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: idumont.personal@gmail.com # Cambia esto por tu correo real
+    email: tu.correo@dominio.com # Cambia esto por tu correo real
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
@@ -33,10 +33,10 @@ spec:
   ingressClassName: alb
   tls:
     - hosts:
-        - jitsi.sub.idumont.cat
+        - jitsi.sub.dominio.com
       secretName: jitsi-web-tls
   rules:
-    - host: jitsi.sub.idumont.cat
+    - host: jitsi.sub.dominio.com
       http:
         paths:
           - path: /
@@ -46,3 +46,4 @@ spec:
                 name: myjitsi-jitsi-meet-web # Cambia por el nombre real de tu servicio
                 port:
                   number: 80
+
