@@ -136,11 +136,11 @@ helm repo update
 helm install myjitsi jitsi/jitsi-meet \
   --set ingress.enabled=true \
   --set ingress.annotations."kubernetes\.io/ingress\.class"=alb \
-  --set ingress.hosts[0].host="jitsi.sub.idumont.cat" \
+  --set ingress.hosts[0].host="jitsi.sub.dominio.com" \
   --set ingress.hosts[0].paths[0]="/" \
   --set jvb.service.type=LoadBalancer \
-  --set jvb.publicIPs[0]="idumont.cat" \
-  --set publicURL="https://jitsi.sub.idumont.cat"
+  --set jvb.publicIPs[0]="dominio.com" \
+  --set publicURL="https://jitsi.sub.dominio.com"
   
 # Para continuar, modificamos los siguientes ficheros del jitsi para indicar que usen un LoadBalancer
 # 	Para editar los .yml con helm
@@ -192,7 +192,7 @@ kubectl apply -f ingress.yml
 kubectl get ingress jitsi-ingress
 
 # Creamos el CNAME en route53
-echo "En mi caso lo llamaré jitsi.sub.idumont.cat y el registro debe ser un cname al ALB del ingress"
+echo "En mi caso lo llamaré jitsi.sub.dominio.com y el registro debe ser un cname al ALB del ingress"
 
 
 # En caso de que desconecte de la reunión cuando intentes unirte haz esto:
@@ -230,6 +230,7 @@ prosody-data-myjitsi-prosody-0   Bound    pvc-8bea15e0-860c-4af4-9b65-6b9cff47d6
 # El ingress
 ubuntu@ip-172-31-85-17:~/eks/jitsi$ kubectl get ingress
 NAME                        CLASS    HOSTS                   ADDRESS                                                                 PORTS     AGE
-cm-acme-http-solver-bpksr   <none>   jitsi.sub.idumont.cat                                                                           80        150m
-jitsi-web-ingress           alb      jitsi.sub.idumont.cat   k8s-default-jitsiweb-ca10227f9a-398667594.us-east-1.elb.amazonaws.com   80, 443   150m
+cm-acme-http-solver-bpksr   <none>   jitsi.sub.dominio.com                                                                           80        150m
+jitsi-web-ingress           alb      jitsi.sub.dominio.com   k8s-default-jitsiweb-ca10227f9a-398667594.us-east-1.elb.amazonaws.com   80, 443   150m
+
 # Hay que pillar la url y ponerla como cname en el route53 o en el cloudflare, donde se tenga el registro
