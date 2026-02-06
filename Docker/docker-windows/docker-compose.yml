@@ -1,0 +1,29 @@
+version: "3"
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows10
+    environment:
+      VERSION: "win10"
+      RAM_SIZE: "8G"
+      CPU_CORES: "6"
+      DISK_SIZE: "40G"
+
+      # FIX: 
+      # - Using safe USB configuration for Q35.
+      # - Removed manual 'addr' and 'bus' specifications that cause crashes.
+      # - Added qemu-xhci (USB 3.0) which is native to Q35/modern chipsets.
+      ARGUMENTS: "-cpu host -vga virtio -machine q35 -device qemu-xhci -device usb-tablet -global kvm-pit.lost_tick_policy=discard -enable-kvm"
+    devices:
+      - /dev/kvm
+      - /dev/vhost-net
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    stop_grace_period: 2m
+    volumes:
+      - ./win-data:/storage
+    restart: on-failure
