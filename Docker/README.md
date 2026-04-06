@@ -100,7 +100,7 @@ Una vez dentro de la utilidad `diskpart`, ejecuta la siguiente secuencia:
 
 ```powershell
 # Selecciona el fichero VHDX
-select vdisk file="C:\Ruta\Al\Fichero\ext4.vhdx"
+select vdisk file="C:\Users\TU_USUARIO\AppData\Local\Packages\...\LocalState\ext4.vhdx"
 
 # Proceso de compactación
 compact vdisk
