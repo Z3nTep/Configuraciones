@@ -21,7 +21,7 @@ services:
         tty: true
         stdin_open: true
         volumes:
-            - ./data:/data
+            - ./mc-data:/data
 
         ports:
             - "25565:25565"

@@ -1,6 +1,6 @@
 services:
   wireguard:
-    container_name: Z3nNet-wireguard
+    container_name: WireGuard
     image: linuxserver/wireguard
     restart: unless-stopped
     cap_add:
@@ -18,7 +18,7 @@ services:
       - ALLOWEDIPS=0.0.0.0/0, ::/0
     volumes:
       - ./wireguard/config:/config
-      - /lib/modules:/lib/modules:ro
+      # - /lib/modules:/lib/modules:ro
     ports:
       - 51820:51820/udp
     sysctls:
@@ -28,7 +28,7 @@ services:
         ipv4_address: 5.0.0.3
 
   adguard:
-    container_name: Z3nNet-adguard
+    container_name: AdBlock
     image: adguard/adguardhome
     restart: unless-stopped
     hostname: adguard
@@ -53,25 +53,10 @@ services:
     networks:
       vpnnet:
         ipv4_address: 5.0.0.2
-    depends_on: [wireguard]
-
-
-  nginx:
-    container_name: Z3nNet-Nginx
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - 81:80
-      - 444:443
-    volumes:
-      - ./nginx/config:/etc/nginx/conf.d
-      - ./nginx/web-sites:/usr/share/nginx/html
-    networks:
-      vpnnet:
-        ipv4_address: 5.0.0.4
+    depends_on: [ wireguard ]
 
 networks:
-  vpnnet:
+  ZPNet:
     driver: bridge
     ipam:
       config:
