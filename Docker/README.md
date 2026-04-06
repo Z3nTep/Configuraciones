@@ -11,7 +11,7 @@ Este repositorio contiene la configuración y orquestación de diversos servicio
 | [**NextCloud**](./NextCloud) | Almacenamiento en la nube (openSUSE + MariaDB + Redis). |
 | [**Windows**](./docker-windows) | Instancia de Windows con aceleración KVM. |
 | [**VPN & AdBlock**](./VPN) | Túnel WireGuard con bloqueo de publicidad AdGuard Home. |
-| [**Minecraft**](./Mine) | Servidor de Paper MC de alto rendimiento. |
+| [**Mine**](./Mine) | Servidor de Paper MC de alto rendimiento. |
 
 ---
 
@@ -96,6 +96,7 @@ diskpart
 ```
 
 ### 2. Comandos en Diskpart
+
 Una vez dentro de la utilidad `diskpart`, ejecuta la siguiente secuencia:
 
 ```powershell
