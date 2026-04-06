@@ -4,18 +4,19 @@ Entorno completo de Nextcloud basado en **openSUSE Leap 15.5** usando Docker Com
 
 ---
 
-## 🗺️ Arquitectura
+## 🗺️ Estructura de Directorios
 
-```mermaid
-graph TD;
-    Client([🌐 Cliente/Navegador]) --> |Puerto 8080| App[🖥️ Nextcloud App<br>openSUSE + Apache + PHP8];
-    App --> |tcp:3306| DB[(🗄️ MariaDB)];
-    App --> |tcp:6379| Cache[(⚡ Redis)];
-
-    App -.-> |Montaje| VolApp[/📂 nc-data/app/];
-    App -.-> |Montaje| VolData[/📂 nc-data/data/];
-    DB -.-> |Montaje| VolDB[/📂 nc-data/db/];
-    Cache -.-> |Montaje| VolCache[/📂 nc-data/redis/];
+```text
+.
+├── nc-data/
+│   ├── app/            # Datos de Nextcloud
+│   ├── data/           # Datos subidos por los usuarios
+│   ├── db/             # Datos de la BBDD (MariaDB)
+│   └── redis/          # Caché persistente
+├── Dockerfile          
+├── entrypoint.sh       
+├── docker-compose.yml
+└── .env
 ```
 
 ---
@@ -37,15 +38,15 @@ graph TD;
 ## 🚀 Instalación y Arranque
 
 1. Configura las contraseñas en `.env`.
-2. Ejecuta:
+2. Ejecuta lo siguiente desde el directorio del proyecto:
 
 ```bash
 docker-compose up -d --build
 ```
 
-3. Accede a `http://localhost:8080` en tu navegador.
-4. Configura el primer usuario administrador.
-5. Configura la conexión de Base de Datos:
+1. Accede a `http://localhost:8080` en tu navegador.
+2. Configura el primer usuario administrador.
+3. Configura la conexión de Base de Datos:
 
 * Usuario: `nextcloud` (o tu variable `MYSQL_USER`).
 * Contraseña: La misma de `MYSQL_PASSWORD`.
